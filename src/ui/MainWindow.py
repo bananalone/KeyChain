@@ -10,26 +10,26 @@ from ui.interface import Paintable
 class MainWindow(QMainWindow, Paintable):
     def __init__(self) -> None:
         super().__init__()
+        self._menu_bar = MenuBar(self)
+        self._group_frame = GroupFrame(self)
+        self._group_frame.setMinimumWidth(100)
+        self._group_frame.setMaximumWidth(300)
+        self._account_frame = AccountFrame(self)
+        self._account_frame.setMinimumWidth(360)
+        self.setMenuBar(self._menu_bar)
         self.paint()
-        
+
     def paint(self):
         self.setWindowTitle('KeyChain')
-        menu_bar = MenuBar(self)
-        group_frame = GroupFrame(self)
-        group_frame.setMinimumWidth(100)
-        group_frame.setMaximumWidth(300)
-        account_frame = AccountFrame(self)
-        account_frame.setMinimumWidth(360)
-        self.setMenuBar(menu_bar)
         splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(group_frame)
-        splitter.addWidget(account_frame)
+        splitter.addWidget(self._group_frame)
+        splitter.addWidget(self._account_frame)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         self.setCentralWidget(splitter)
-        menu_bar.paint()
-        group_frame.paint()
-        account_frame.paint()
+        self._menu_bar.paint()
+        self._group_frame.paint()
+        self._account_frame.paint()
     
     def repaint(self):
         self.paint()
