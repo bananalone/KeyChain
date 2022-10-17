@@ -9,7 +9,7 @@ class Account:
         if password:
             self._password = password
         else:
-            self._random_password()
+            self.random_password()
         self._remark = remark
         
     @property
@@ -30,7 +30,7 @@ class Account:
     def set_remark(self, remark: str):
         self._remark = remark
 
-    def _random_password(self):
+    def random_password(self):
         digits = [str(d) for d in range(10)]
         random.shuffle(digits)
         capital_latters = [chr(d) for d in range(ord('A'), ord('Z')+1)]

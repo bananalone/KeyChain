@@ -1,5 +1,7 @@
 from typing import List
 
+from PyQt5.QtWidgets import QMainWindow
+
 from data import Account, Group
 from utils import singleton
 
@@ -10,6 +12,7 @@ class _State:
         self.current_selected_group: Group = None
         self.current_groups: List[Group] = []
         self.current_accounts: List[Account] = []
+        self.current_selected_account: Account = None
 
 
 state = _State()
