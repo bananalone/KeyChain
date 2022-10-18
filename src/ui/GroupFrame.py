@@ -1,10 +1,11 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QLineEdit, QListWidget
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtWidgets import (QFrame, QVBoxLayout, QLabel, QLineEdit, QListWidget, QMenu,
+                             QMessageBox, QInputDialog)
 
 from ui.state import state
 from ui.interface import Paintable
 from data import Group, Manager
-from handlers import AccountsFilter, GroupsFilter, ManagerExpander, ManagerCleaner
+from handlers import AccountsFilter, GroupCleaner, GroupExpander, GroupsFilter, ManagerExpander, ManagerCleaner
 
 
 class GroupFrame(QFrame, Paintable):
@@ -15,6 +16,8 @@ class GroupFrame(QFrame, Paintable):
         self._label_group = QLabel()
         self._line_edit_group_filter = QLineEdit()
         self._list_widget_group = QListWidget()
+        self._list_widget_group.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._list_widget_group.customContextMenuRequested.connect(self._create_list_widget_context_menu)
         state.current_groups = GroupsFilter().set_manager().groups()
         vbox = QVBoxLayout()
         self._label_group.setText('Groups')
@@ -42,4 +45,59 @@ class GroupFrame(QFrame, Paintable):
         group_name = item.text()
         state.current_selected_group = self._manager.get_group(group_name)
         state.current_accounts = AccountsFilter().set_group(state.current_selected_group).accounts()
+        self.repaint()
+
+    def _create_list_widget_context_menu(self, pos: QPoint):
+        item = self._list_widget_group.itemAt(pos)
+        menu = QMenu()
+        if item:
+            group = self._manager.get_group(item.text())
+            add_group = menu.addAction('Add group')
+            add_group.triggered.connect(self._add_group)
+            menu.addSeparator()
+            rename_group = menu.addAction(f'Rename {group.name}')
+            rename_group.triggered.connect(self._rename_group)
+            menu.addSeparator()
+            remove_group = menu.addAction(f'Remove {group.name}')
+            remove_group.triggered.connect(self._remove_group)
+            state.current_selected_group = group
+        else:
+            add_group = menu.addAction('Add group')
+            add_group.triggered.connect(self._add_group)
+        menu.exec(self._list_widget_group.mapToGlobal(pos))
+
+    def _add_group(self):
+        text, ok = QInputDialog.getText(self, 'Add group', 'Input group name:')
+        if ok:
+            if text in GroupsFilter().set_manager().group_name_list():
+                QMessageBox.about(self, 'Add group error', f'{text} already exists')
+                return
+            group = Group(text)
+            self._manager.add_group(group)
+            state.current_selected_account = None
+            state.current_accounts = []
+            state.current_selected_group = group
+            state.current_groups = GroupsFilter().set_manager().groups()
+            self.repaint()
+
+    def _rename_group(self):
+        text, ok = QInputDialog.getText(self, 'Rename group', 'Input new group name:')
+        if ok:
+            if text in GroupsFilter().set_manager().group_name_list():
+                QMessageBox.about(self, 'Rename group error', f'{text} already exists')
+                return
+            group = Group(text)
+            GroupExpander(group).expand_accounts_in_group(state.current_selected_group)
+            self._manager.remove_group(state.current_selected_group.name)
+            self._manager.add_group(group)
+            state.current_selected_group = group
+            state.current_groups = GroupsFilter().set_manager().groups()
+            self.repaint()
+
+    def _remove_group(self):
+        self._manager.remove_group(state.current_selected_group.name)
+        state.current_selected_group = None
+        state.current_selected_account = None
+        state.current_accounts = []
+        state.current_groups = GroupsFilter().set_manager().groups()
         self.repaint()

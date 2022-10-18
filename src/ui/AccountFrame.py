@@ -41,6 +41,7 @@ class AccountFrame(QFrame, Paintable):
         self._table_widget_account.setHorizontalHeaderLabels(['Username', 'Password', 'Remark'])
         if not state.current_selected_group:
             self._label_group.setText('No group selected')
+            self._table_widget_account.setRowCount(0)
             return
         self._label_group.setText(state.current_selected_group.name)
         self._table_widget_account.setRowCount(len(state.current_accounts))
@@ -85,23 +86,25 @@ class AccountFrame(QFrame, Paintable):
  
     def _create_table_widget_context_menu(self, pos: QPoint):
         item = self._table_widget_account.itemAt(pos)
-        if not item:
-            return
-        account = state.current_accounts[item.row()]
-        state.current_selected_account = account
         menu = QMenu()
-        add_account = menu.addAction('Add account')
-        add_account.triggered.connect(self._add_account)
-        menu.addSeparator()
-        edit_password = menu.addAction('Edit password')
-        edit_password.triggered.connect(self._set_account_password)
-        rand_passwd = menu.addAction('Random password')
-        rand_passwd.triggered.connect(self._random_password)
-        edit_remark = menu.addAction('Edit remark')
-        edit_remark.triggered.connect(self._set_account_remark)
-        menu.addSeparator()
-        remove_account = menu.addAction(f'Remove {account.username}')
-        remove_account.triggered.connect(self._remove_account)
+        if item:
+            account = state.current_accounts[item.row()]
+            state.current_selected_account = account
+            add_account = menu.addAction('Add account')
+            add_account.triggered.connect(self._add_account)
+            menu.addSeparator()
+            edit_password = menu.addAction('Edit password')
+            edit_password.triggered.connect(self._set_account_password)
+            rand_passwd = menu.addAction('Random password')
+            rand_passwd.triggered.connect(self._random_password)
+            edit_remark = menu.addAction('Edit remark')
+            edit_remark.triggered.connect(self._set_account_remark)
+            menu.addSeparator()
+            remove_account = menu.addAction(f'Remove {account.username}')
+            remove_account.triggered.connect(self._remove_account)
+        else:
+            add_account = menu.addAction('Add account')
+            add_account.triggered.connect(self._add_account)
         h = self._table_widget_account.horizontalHeader().height()
         w = self._table_widget_account.verticalHeader().width()
         menu.exec(self._table_widget_account.mapToGlobal(QPoint(pos.x()+w, pos.y()+h)))
