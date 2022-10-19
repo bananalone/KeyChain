@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import (QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLa
 
 from data import Account, Manager
 from handlers import AccountsFilter
-from ui.state import state
+from memory import StateRecorder
+from ui.state import AppState, ui_state
 from ui.interface import Paintable
 
 
@@ -14,6 +15,7 @@ class AccountFrame(QFrame, Paintable):
         super().__init__()
         self._parent = parent
         self._manager = Manager()
+        self._recorder = StateRecorder()
         self._label_group = QLabel()
         self._line_edit_account_filter = QLineEdit()
         self._table_widget_account = QTableWidget()
@@ -39,13 +41,13 @@ class AccountFrame(QFrame, Paintable):
     def paint(self):
         self._table_widget_account.clear()
         self._table_widget_account.setHorizontalHeaderLabels(['Username', 'Password', 'Remark'])
-        if not state.current_selected_group:
+        if not ui_state.current_selected_group:
             self._label_group.setText('No group selected')
             self._table_widget_account.setRowCount(0)
             return
-        self._label_group.setText(state.current_selected_group.name)
-        self._table_widget_account.setRowCount(len(state.current_accounts))
-        for i, account in enumerate(state.current_accounts):
+        self._label_group.setText(ui_state.current_selected_group.name)
+        self._table_widget_account.setRowCount(len(ui_state.current_accounts))
+        for i, account in enumerate(ui_state.current_accounts):
             self._table_widget_account.setItem(i, 0, QTableWidgetItem(account.username))
             self._table_widget_account.setItem(i, 1, QTableWidgetItem(account.password))
             remark = account.remark if account.remark else ''
@@ -62,34 +64,38 @@ class AccountFrame(QFrame, Paintable):
         column = item.column()
         if column == 0:
             return
-        account = state.current_accounts[item.row()]
-        state.current_selected_account = account
+        account = ui_state.current_accounts[item.row()]
+        ui_state.current_selected_account = account
         if column == 1:
             self._set_account_password()
         else:
             self._set_account_remark()
-        self.repaint()
                 
     def _set_account_password(self):
-        account = state.current_selected_account
+        account = ui_state.current_selected_account
         text, ok = QInputDialog.getText(self, account.username, 'Input new password:')
         if ok:
+            self._recorder.record(AppState())
             account.set_password(text)
-        self.repaint()
+            ui_state.saved = False
+            self.repaint()
         
     def _set_account_remark(self):
-        account = state.current_selected_account
+        account = ui_state.current_selected_account
         text, ok = QInputDialog.getText(self, account.username, 'Input new remark:')
         if ok:
+            self._recorder.record(AppState())
             account.set_remark(text)
-        self.repaint()
+            ui_state.saved = False
+            self.repaint()
  
     def _create_table_widget_context_menu(self, pos: QPoint):
         item = self._table_widget_account.itemAt(pos)
         menu = QMenu()
         if item:
-            account = state.current_accounts[item.row()]
-            state.current_selected_account = account
+            self._table_widget_account.selectRow(item.row())
+            account = ui_state.current_accounts[item.row()]
+            ui_state.current_selected_account = account
             add_account = menu.addAction('Add account')
             add_account.triggered.connect(self._add_account)
             menu.addSeparator()
@@ -102,7 +108,7 @@ class AccountFrame(QFrame, Paintable):
             menu.addSeparator()
             remove_account = menu.addAction(f'Remove {account.username}')
             remove_account.triggered.connect(self._remove_account)
-        else:
+        elif ui_state.current_selected_group:
             add_account = menu.addAction('Add account')
             add_account.triggered.connect(self._add_account)
         h = self._table_widget_account.horizontalHeader().height()
@@ -112,22 +118,28 @@ class AccountFrame(QFrame, Paintable):
     def _add_account(self):
         text, ok = QInputDialog.getText(self, 'Add account', 'Input username:')
         if ok:
-            if text in state.current_selected_group.username_list:
-                QMessageBox.about(self, 'Add account error', f'{text} already in {state.current_selected_group.name}')
+            if len(text) > 0 and text in ui_state.current_selected_group.username_list:
+                QMessageBox.about(self, 'Add account error', f'{text} already in {ui_state.current_selected_group.name}')
                 return
             account = Account(text)
-            state.current_selected_group.add_account(account)
-            state.current_accounts = AccountsFilter().set_group(state.current_selected_group).accounts()
-        self.repaint()
+            self._recorder.record(AppState())
+            ui_state.current_selected_group.add_account(account)
+            ui_state.current_accounts = AccountsFilter().set_group(ui_state.current_selected_group).accounts()
+            ui_state.saved = False
+            self.repaint()
         
     def _random_password(self):
-        state.current_selected_account.random_password()
+        self._recorder.record(AppState())
+        ui_state.current_selected_account.random_password()
+        ui_state.saved = False
         self.repaint()
         
     def _remove_account(self):
-        state.current_selected_group.remove_account(state.current_selected_account.username)
-        state.current_accounts = AccountsFilter().set_group(state.current_selected_group).accounts()
-        state.current_selected_account = None
+        self._recorder.record(AppState())
+        ui_state.current_selected_group.remove_account(ui_state.current_selected_account.username)
+        ui_state.current_accounts = AccountsFilter().set_group(ui_state.current_selected_group).accounts()
+        ui_state.current_selected_account = None
+        ui_state.saved = False
         self.repaint()
 
 

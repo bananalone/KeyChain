@@ -5,6 +5,7 @@ from ui.GroupFrame import GroupFrame
 from ui.AccountFrame import AccountFrame
 from ui.MenuBar import MenuBar
 from ui.interface import Paintable
+from ui.state import ui_state
 
 
 class MainWindow(QMainWindow, Paintable):
@@ -20,7 +21,10 @@ class MainWindow(QMainWindow, Paintable):
         self.paint()
 
     def paint(self):
-        self.setWindowTitle('KeyChain')
+        if ui_state.saved:
+            self.setWindowTitle(f'{ui_state.current_file} - KeyChain')
+        else:
+            self.setWindowTitle(f'*{ui_state.current_file} - KeyChain')
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self._group_frame)
         splitter.addWidget(self._account_frame)

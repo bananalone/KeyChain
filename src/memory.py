@@ -1,80 +1,91 @@
 import time
-import pickle
 from typing import List
 
-from data import Account, Group
-from handlers import GroupsFilter, ManagerCleaner, ManagerExpander
+from utils import singleton
 
 
-class ManagerState:
+class BaseState:
     def __init__(self) -> None:
         self._time = time.time()
-        self._groups_bytes = pickle.dumps(GroupsFilter().set_manager().groups())
     
     @property
     def time(self):
         return self._time
 
     def recovery(self):
-        groups: List[Group] = pickle.loads(self._groups_bytes)
-        ManagerCleaner().clean_all_groups()
-        ManagerExpander().expand_groups(groups)
+        raise NotImplementedError
 
 
-class ManagerStateRecorder:
-    def __init__(self, interval: float = 10) -> None:
-        self._interval = interval
-        self._history: List[ManagerState] = []
+@singleton
+class StateRecorder:
+    def __init__(self) -> None:
+        self._interval = 10
+        self._history: List[BaseState] = []
         self._last_state = None
-        
-    def record(self):
-        current_state = ManagerState()
+
+    def record(self, state: BaseState):
         if self._last_state:
             if len(self._history) == 0 or self._last_state.time - self._history[-1].time >= self._interval:
                 self._history.append(self._last_state)
-        self._last_state = current_state
+        self._last_state = state
 
-    def recovery(self):
+    def pop_state(self):
         if self._last_state:
-            self._last_state.recovery()
-            self._last_state = self._history.pop() if len(self._history) > 0 else None
-
+            last_state = self._last_state
+            if len(self._history) == 0:
+                self._last_state = None
+            else:
+                self._last_state = self._history.pop()
+            return last_state
+        return None
     
+    def last_state(self):
+        if self._last_state:
+            return self._last_state
+        return None
 
-if __name__ == '__main__':
-    from data import Manager
-    from utils import load, dump
-    
-    def print_manager():
-        manager = Manager()
-        for group_name in manager.group_name_list:
-            group = manager.get_group(group_name)
-            print(f'group: {group.name}')
-            for username in group.username_list:
-                acc = group.get_account(username)
-                print(f'username: {acc.username}')
+    def empty(self):
+        return True if not self._last_state else False
 
-    m = Manager()
-    g = Group('g')
-    g.add_account(Account('a1')).add_account(Account('a2'))
-    m.add_group(g)
-    print('before remove ...')
-    print_manager()
-    s = ManagerState()
-    g.remove_account('a1')
-    print('after remove ...')
-    print_manager()
-    s.recovery()
-    print('recovery ...')
-    print_manager()
-    f = 'test/key_chain.pkl'
-    dump(s, f)
-    m.get_group('g').remove_account('a2')
-    print()
-    print('before load ...')
-    print_manager()
-    s2: ManagerState = load(f)
-    s2.recovery()
-    print('after load ...')
-    print_manager()
+    def reset(self):
+        self._history: List[BaseState] = []
+        self._last_state = None
+        return self
+
+
+
+# class ManagerStateRecorder:
+#     def __init__(self) -> None:
+#         self._interval = 10
+#         self._history: List[ManagerState] = []
+#         self._last_state = None
+
+#     def record(self):
+#         current_state = ManagerState()
+#         if self._last_state:
+#             if len(self._history) == 0 or self._last_state.time - self._history[-1].time >= self._interval:
+#                 self._history.append(self._last_state)
+#         self._last_state = current_state
+
+#     def pop_state(self):
+#         if self._last_state:
+#             last_state = self._last_state
+#             if len(self._history) == 0:
+#                 self._last_state = None
+#             else:
+#                 self._last_state = self._history.pop()
+#             return last_state
+#         return ManagerState()
     
+#     def last_state(self):
+#         if self._last_state:
+#             return self._last_state
+#         return ManagerState()
+
+#     def empty(self):
+#         return True if not self._last_state else False
+
+#     def reset(self):
+#         self._history: List[ManagerState] = []
+#         self._last_state = None
+#         return self
