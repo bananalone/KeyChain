@@ -55,7 +55,7 @@ class AccountFrame(QFrame, Paintable):
             self._table_widget_account.setItem(i, 0, QTableWidgetItem(account.username))
             self._table_widget_account.setItem(i, 1, QTableWidgetItem(account.password))
             if not account.remark:
-                account.set_remark('')
+                account.set_remark(account.username)
             self._table_widget_account.setItem(i, 2, QTableWidgetItem(account.remark))
         if self._current_group != ui_state.current_selected_group:
             self._line_edit_account_filter.setText('')

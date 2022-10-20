@@ -28,7 +28,8 @@ def find_substr(string: str, sub: str):
         return True
     if len(string) == 0:
         return False
-    assert len(sub) <= len(string), f'len substring[{len(sub)}] > len string[{len(string)}]'
+    if len(sub) > len(string):
+        return False
     i, j = 0, 0
     while i < len(string) and j < len(sub):
         if sub[j] == string[i]:

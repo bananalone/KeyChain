@@ -4,10 +4,9 @@ from PyQt5.QtWidgets import QApplication
 
 from ui import MainWindow
 
-#debug
-from debug import  setup_manager
-
-setup_manager()
+# # debug
+# from debug import  setup_manager
+# setup_manager()
 
 
 def main():

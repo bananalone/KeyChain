@@ -15,6 +15,7 @@ class _UiState:
         self.current_selected_account: Account = None
         self.current_file = 'Untitled'
         self.saved = True
+        self.windowStaysOnTop = False
 
 ui_state = _UiState()
 

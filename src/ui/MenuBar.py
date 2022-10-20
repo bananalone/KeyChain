@@ -1,12 +1,11 @@
 from pathlib import Path
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenuBar, QFileDialog, qApp, QMessageBox
+from PyQt5.QtWidgets import QMenuBar, QFileDialog, qApp, QMessageBox, QInputDialog
 
 from ui.state import ui_state, ManagerState, AppState
 from ui.interface import Paintable
 from utils import dump, load
-from data import Manager
+from data import Group, Manager
 from handlers import GroupsFilter, ManagerCleaner
 from memory import StateRecorder
 
@@ -15,15 +14,18 @@ class MenuBar(QMenuBar, Paintable):
     def __init__(self, parent: Paintable) -> None:
         super().__init__()
         self._parent = parent
+        self._manager = Manager()
         self._recorder = StateRecorder()
         self._file_path = None
         self._file_menu = self.addMenu('File')
         self._edit_menu = self.addMenu('Edit')
+        self._setting_menu = self.addMenu('Setting')
         self._help_menu = self.addMenu('Help')
         
     def paint(self):
         self._create_file_menu()
         self._create_edit_menu()
+        self._create_setting_menu()
         self._create_help_menu()
 
     def repaint(self):
@@ -42,7 +44,7 @@ class MenuBar(QMenuBar, Paintable):
         save_as.triggered.connect(self._save_as)
         self._file_menu.addSeparator()
         quit_app = self._file_menu.addAction('Quit')
-        quit_app.triggered.connect(self._quit_app)
+        quit_app.triggered.connect(self.quit_app)
 
     def _create_edit_menu(self):
         self._edit_menu.clear()
@@ -53,6 +55,13 @@ class MenuBar(QMenuBar, Paintable):
         add_group.triggered.connect(self._add_group)
         remove_group = self._edit_menu.addAction('Remove group')
         remove_group.triggered.connect(self._remove_group)
+
+    def _create_setting_menu(self):
+        self._setting_menu.clear()
+        stays_on_top = self._setting_menu.addAction('Stays on top')
+        stays_on_top.setCheckable(True)
+        stays_on_top.triggered.connect(self._stays_on_top)
+        stays_on_top.setChecked(ui_state.windowStaysOnTop)
 
     def _create_help_menu(self):
         self._help_menu.clear()
@@ -137,7 +146,7 @@ class MenuBar(QMenuBar, Paintable):
                 return False
         return True
 
-    def _quit_app(self):
+    def quit_app(self):
         if not self._save_with_question():
             return
         qApp.exit()
@@ -151,10 +160,39 @@ class MenuBar(QMenuBar, Paintable):
             self.repaint()
 
     def _add_group(self):
-        pass
+        text, ok = QInputDialog.getText(self, 'Add group', 'Input group name:')
+        if ok:
+            if len(text) > 0 and text in GroupsFilter().set_manager().group_name_list():
+                QMessageBox.about(self, 'Add group error', f'{text} already exists')
+                return
+            group = Group(text)
+            self._recorder.record(AppState())
+            self._manager.add_group(group)
+            ui_state.current_selected_account = None
+            ui_state.current_accounts = []
+            ui_state.current_selected_group = group
+            ui_state.current_groups = GroupsFilter().set_manager().groups()
+            ui_state.saved = False
+            self.repaint()
 
     def _remove_group(self):
-        pass
+        text, ok = QInputDialog.getText(self, 'Delete group', 'Input group name:')
+        if ok:
+            if len(text) > 0 and text not in GroupsFilter().set_manager().group_name_list():
+                QMessageBox.about(self, 'Delete group error', f'{text} not exists')
+                return
+            self._manager.remove_group(text)
+            ui_state.current_selected_group = ui_state.current_selected_group if text == ui_state.current_selected_group else None
+            ui_state.current_groups = GroupsFilter().set_manager().groups()
+            if not ui_state.current_selected_group:
+                ui_state.current_selected_account = None
+                ui_state.current_accounts = []
+            ui_state.saved = False
+            self.repaint()
+
+    def _stays_on_top(self):
+        ui_state.windowStaysOnTop = not ui_state.windowStaysOnTop
+        self.repaint()
 
     def _help(self):
         QMessageBox.about(
