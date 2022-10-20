@@ -1,12 +1,12 @@
-from typing import List
+from typing import List, Callable
 
 from data import Account, Group, Manager
 
 
 class GroupsFilter:
     def __init__(self) -> None:
-        self._all_groups = []
-        self._groups = []
+        self._all_groups: List[Group] = []
+        self._groups: List[Group] = []
         
     def set_groups(self, groups: List[Group]):
         self._all_groups = groups.copy()
@@ -20,13 +20,13 @@ class GroupsFilter:
             self._groups.append(manager.get_group(group_name))
         self._all_groups = self._groups.copy()
         return self
-    
-    def match_group_name(self, pattern: str):
+
+    def filter(self, key: Callable):
         groups = []
         for group in self._groups:
-            if group.name.startswith(pattern):
+            if key(group):
                 groups.append(group)
-        self._gruops = groups
+        self._groups = groups
         return self
     
     def empty_group(self):
@@ -63,8 +63,8 @@ class GroupsFilter:
     
 class AccountsFilter:
     def __init__(self) -> None:
-        self._accounts = []
-        self._all_accounts = []
+        self._accounts: List[Account] = []
+        self._all_accounts: List[Account] = []
         
     def set_accounts(self, accounts: List[Account]):
         self._accounts = accounts.copy()
@@ -77,27 +77,11 @@ class AccountsFilter:
             accounts.append(group.get_account(username))
         self._accounts = accounts
         return self
-    
-    def match_username(self, pattern: str):
+
+    def filter(self, key: Callable):
         accounts = []
         for account in self._accounts:
-            if account.username.startswith(pattern):
-                accounts.append(account)
-        self._accounts = accounts
-        return self
-    
-    def match_remark(self, pattern: str):
-        accounts = []
-        for account in self._accounts:
-            if account.remark and account.remark.startswith(pattern):
-                accounts.append(account)
-        self._accounts = accounts
-        return self
-    
-    def none_remark(self):
-        accounts = []
-        for account in self._accounts:
-            if not account.remark:
+            if key(account):
                 accounts.append(account)
         self._accounts = accounts
         return self

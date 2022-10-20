@@ -1,3 +1,4 @@
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtWidgets import (QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QTableWidget, QTableWidgetItem, QMessageBox,
@@ -8,16 +9,19 @@ from handlers import AccountsFilter
 from memory import StateRecorder
 from ui.state import AppState, ui_state
 from ui.interface import Paintable
+from utils import find_substr
 
 
 class AccountFrame(QFrame, Paintable):
     def __init__(self, parent: Paintable) -> None:
         super().__init__()
+        self._current_group = ui_state.current_selected_group
         self._parent = parent
         self._manager = Manager()
         self._recorder = StateRecorder()
         self._label_group = QLabel()
         self._line_edit_account_filter = QLineEdit()
+        self._line_edit_account_filter.textChanged.connect(self._filter_accounts)
         self._table_widget_account = QTableWidget()
         self._table_widget_account.setColumnCount(3)
         self._table_widget_account.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -50,11 +54,25 @@ class AccountFrame(QFrame, Paintable):
         for i, account in enumerate(ui_state.current_accounts):
             self._table_widget_account.setItem(i, 0, QTableWidgetItem(account.username))
             self._table_widget_account.setItem(i, 1, QTableWidgetItem(account.password))
-            remark = account.remark if account.remark else ''
-            self._table_widget_account.setItem(i, 2, QTableWidgetItem(remark))
+            if not account.remark:
+                account.set_remark('')
+            self._table_widget_account.setItem(i, 2, QTableWidgetItem(account.remark))
+        if self._current_group != ui_state.current_selected_group:
+            self._line_edit_account_filter.setText('')
+            self._current_group = ui_state.current_selected_group
 
     def repaint(self):
         self._parent.repaint()
+
+    def _filter_accounts(self, text: str):
+        if not ui_state.current_selected_group:
+            return
+        accounts = AccountsFilter().set_group(ui_state.current_selected_group) \
+                                   .filter(lambda a: find_substr(a.remark, text)).accounts()
+        accounts.sort(key = lambda a: len(a.remark))
+        ui_state.current_accounts = accounts
+        self.repaint()
+        self._line_edit_account_filter.setFocus()
 
     def _table_widget_clicked(self, item: QTableWidgetItem):
         clipboard = QApplication.clipboard()

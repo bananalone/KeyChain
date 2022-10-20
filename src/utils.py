@@ -21,3 +21,18 @@ def load(file: str) -> Any:
 def dump(obj: Any, file: str):
     with open(file, 'wb') as f:
         pickle.dump(obj, f)
+
+
+def find_substr(string: str, sub: str):
+    if len(sub) == 0:
+        return True
+    if len(string) == 0:
+        return False
+    assert len(sub) <= len(string), f'len substring[{len(sub)}] > len string[{len(string)}]'
+    i, j = 0, 0
+    while i < len(string) and j < len(sub):
+        if sub[j] == string[i]:
+            j += 1
+        i += 1
+    return True if j == len(sub) else False
+

@@ -7,6 +7,7 @@ from ui.state import AppState, ui_state
 from ui.interface import Paintable
 from data import Group, Manager
 from handlers import AccountsFilter, GroupCleaner, GroupExpander, GroupsFilter, ManagerExpander, ManagerCleaner
+from utils import find_substr
 
 
 class GroupFrame(QFrame, Paintable):
@@ -17,6 +18,7 @@ class GroupFrame(QFrame, Paintable):
         self._recorder = StateRecorder()
         self._label_group = QLabel()
         self._line_edit_group_filter = QLineEdit()
+        self._line_edit_group_filter.textChanged.connect(self._filter_groups)
         self._list_widget_group = QListWidget()
         self._list_widget_group.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._list_widget_group.customContextMenuRequested.connect(self._create_list_widget_context_menu)
@@ -37,6 +39,13 @@ class GroupFrame(QFrame, Paintable):
     
     def repaint(self):
         self._parent.repaint()
+
+    def _filter_groups(self, text: str):
+        groups = GroupsFilter().set_manager().filter(lambda g: find_substr(g.name, text)).groups()
+        groups.sort(key = lambda g: len(g.name))
+        ui_state.current_groups = groups
+        self.repaint()
+        self._line_edit_group_filter.setFocus()
 
     def _list_groups(self):
         self._list_widget_group.clear()
