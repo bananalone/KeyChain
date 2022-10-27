@@ -20,6 +20,7 @@ class AccountFrame(QFrame, Paintable):
         self._manager = Manager()
         self._recorder = StateRecorder()
         self._label_group = QLabel()
+        self._clip_bak = QApplication.clipboard().text()
         self._line_edit_account_filter = QLineEdit()
         self._line_edit_account_filter.textChanged.connect(self._filter_accounts)
         self._table_widget_account = QTableWidget()
@@ -76,9 +77,12 @@ class AccountFrame(QFrame, Paintable):
 
     def _table_widget_clicked(self, item: QTableWidgetItem):
         clipboard = QApplication.clipboard()
+        self._clip_bak = clipboard.text()
         clipboard.setText(item.text())
 
     def _table_widget_double_clicked(self, item: QTableWidgetItem):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self._clip_bak)
         column = item.column()
         if column == 0:
             return
