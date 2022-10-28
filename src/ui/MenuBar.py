@@ -147,9 +147,8 @@ class MenuBar(QMenuBar, Paintable):
         return True
 
     def quit_app(self):
-        if not self._save_with_question():
-            return
-        qApp.exit()
+        if self._save_with_question():
+            qApp.exit()
 
     def _undo(self):
         if not self._recorder.empty():

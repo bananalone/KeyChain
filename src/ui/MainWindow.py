@@ -45,8 +45,6 @@ class MainWindow(QMainWindow, Paintable):
     def repaint(self):
         self.paint()
 
-    def closeEvent(self) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         self._menu_bar.quit_app()
-
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        self._menu_bar.quit_app()
+        event.ignore()
