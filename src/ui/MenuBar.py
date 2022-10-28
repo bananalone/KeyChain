@@ -157,6 +157,7 @@ class MenuBar(QMenuBar, Paintable):
             if not current_state:
                 return
             current_state.recovery()
+            ui_state.saved = False
             self.repaint()
 
     def _add_group(self):
