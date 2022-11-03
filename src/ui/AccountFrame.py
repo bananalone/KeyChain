@@ -1,8 +1,8 @@
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QModelIndex
 from PyQt5.QtWidgets import (QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QTableWidget, QTableWidgetItem, QMessageBox,
-                             QHeaderView, QAbstractItemView, QInputDialog, QMenu)
+                             QHeaderView, QAbstractItemView, QInputDialog, QMenu, QToolTip)
 
 from data import Account, Manager
 from handlers import AccountsFilter
@@ -32,6 +32,8 @@ class AccountFrame(QFrame, Paintable):
         self._table_widget_account.itemDoubleClicked.connect(self._table_widget_double_clicked)
         self._table_widget_account.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._table_widget_account.customContextMenuRequested.connect(self._create_table_widget_context_menu)
+        self._table_widget_account.setMouseTracking(True)
+        self._table_widget_account.entered.connect(self._show_account_info_tip)
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         self._label_group.setText('No group selected')
@@ -136,6 +138,9 @@ class AccountFrame(QFrame, Paintable):
         h = self._table_widget_account.horizontalHeader().height()
         w = self._table_widget_account.verticalHeader().width()
         menu.exec(self._table_widget_account.mapToGlobal(QPoint(pos.x()+w, pos.y()+h)))
+
+    def _show_account_info_tip(self, model_index: QModelIndex):
+        QToolTip.showText(QtGui.QCursor.pos(), model_index.data())
 
     def _add_account(self):
         text, ok = QInputDialog.getText(self, 'Add account', 'Input username:')

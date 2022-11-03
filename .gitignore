@@ -1,6 +1,6 @@
 # my ignore folders and files
 .vscode
-
+.vs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
